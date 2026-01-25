@@ -66,7 +66,7 @@ aws ecr get-login-password \
   --docker-password="$(aws ecr get-login-password --region ap-northeast-1)" \
   --namespace argo
 
-## install Argo
+## install  Argo
 kubectl get secret ecr-secret -n argo
 
 spec:
