@@ -53,9 +53,7 @@ def get_usdt_perp_symbols():
     return symbols
 
 
-# =========================
-#
-# =========================
+
 def build_urls(symbols, year=TARGET_YEAR, interval=INTERVAL):
     urls = []
 
@@ -74,9 +72,7 @@ def build_urls(symbols, year=TARGET_YEAR, interval=INTERVAL):
     return urls
 
 
-# =========================
-#
-# =========================
+
 def download_zip_from_url(zip_url):
     filename = zip_url.split("/")[-1]
     symbol = zip_url.split("/")[-3]
@@ -86,9 +82,7 @@ def download_zip_from_url(zip_url):
 
     zip_path = os.path.join(symbol_dir, filename.replace(".zip", ""))
 
-    # =========================
-    #
-    # =========================
+
     if os.path.exists(zip_path):
         print(f"⏭️  Skip existing {symbol}/{filename}")
         return
