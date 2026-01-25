@@ -33,9 +33,7 @@ CURRENT_MONTH = datetime.now().month
 CURRENT_DAY = datetime.now().day
 
 
-# =========================
-#
-# =========================
+
 def get_usdt_perp_symbols():
     print("📡 Fetching symbols from Binance Futures API...")
     r = requests.get(EXCHANGE_INFO_URL, timeout=10)
