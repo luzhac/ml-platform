@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "ai-platform/etl/fetcher/**"
+      - "etl/fetcher/**"
       - ".github/workflows/build-fetch.yml"
   workflow_dispatch:
 
