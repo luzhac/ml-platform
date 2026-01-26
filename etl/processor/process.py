@@ -3,12 +3,12 @@ import pandas as pd
 from glob import glob
 FREQUENCY='1m'
 
-BASE_DIR = f"C:/Myfiles/etl/data/raw_data/binance_{FREQUENCY}_daily_klines_futures"
-#BASE_DIR = f"/data/raw_data/binance_{FREQUENCY}_daily_klines_futures"
+#BASE_DIR = f"C:/Myfiles/etl/data/raw_data/binance_{FREQUENCY}_daily_klines_futures"
+BASE_DIR = f"/data/raw_data/binance_{FREQUENCY}_daily_klines_futures"
 print(BASE_DIR)
 
-OUTPUT_CSV = f"C:/Myfiles/etl/data/processed_data/binance_{FREQUENCY}_daily_klines_futures/current.csv"
-#OUTPUT_CSV = f"/data/processed_data/binance_{FREQUENCY}_daily_klines_futures"
+#OUTPUT_CSV = f"C:/Myfiles/etl/data/processed_data/binance_{FREQUENCY}_daily_klines_futures/current.csv"
+OUTPUT_CSV = f"/data/processed_data/binance_{FREQUENCY}_daily_klines_futures/current.csv"
 
 csv_files = sorted(glob(os.path.join(BASE_DIR, "**", "*.csv"), recursive=True))
 print(f" Found {len(csv_files)} csv files")
