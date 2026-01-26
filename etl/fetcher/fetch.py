@@ -106,6 +106,7 @@ def download_zip_from_url(zip_url):
 
 
 
+
 def main():
     symbols = get_usdt_perp_symbols()
 

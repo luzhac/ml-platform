@@ -25,9 +25,10 @@ k3d cluster create dev \
 
 kubectl create ns argo
 
+## prepare install argo
 kubectl create serviceaccount argo-workflow -n argo
 
-cd /mnt/c/myfiles/myprojects/crypto/ai-platform/pipelines/workflows
+cd /mnt/c/myfiles/myprojects/ml-engineering/pipelines/platform
 
 kubectl apply -f argo-workflow-clusterrole.yaml
 
@@ -54,30 +55,21 @@ Windows
 aws sts get-caller-identity
 
 
-aws ecr get-login-password \
-  --region ap-northeast-1 \
-| docker login \
-  --username AWS \
-  --password-stdin 173381466759.dkr.ecr.ap-northeast-1.amazonaws.com
 
-
- kubectl create secret docker-registry ecr-secret \
+# Avoid get token every time pull image
+kubectl create secret docker-registry ecr-pull-secret \
   --docker-server=173381466759.dkr.ecr.ap-northeast-1.amazonaws.com \
   --docker-username=AWS \
   --docker-password="$(aws ecr get-login-password --region ap-northeast-1)" \
   --namespace argo
 
-## install  Argo
-kubectl get secret ecr-secret -n argo
-
-spec:
-  serviceAccountName: argo-workflow
-
 kubectl patch serviceaccount argo-workflow \
   -n argo \
-  -p '{"imagePullSecrets":[{"name":"ecr-secret"}]}'
+  -p '{"imagePullSecrets":[{"name":"ecr-pull-secret"}]}'
 
-kubectl get sa argo-workflow -n argo -o yaml
+
+
+ 
 
 
 ## mount local disk

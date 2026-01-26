@@ -4,11 +4,12 @@ metadata:
   name: etl-public-data-daily
   namespace: argo
 spec:
-  schedule: "0 2 * * *"        # 每天 02:00
-  timezone: "UTC"              # 可选：明确指定时区
-  concurrencyPolicy: "Forbid"  # 上一次没跑完，不启动新的
-  startingDeadlineSeconds: 600 # 错过 10 分钟内还能补跑
-  suspend: false               # 是否暂停定时任务
+  schedule: "0 2 * * *"        #  02:00
+  timezone: "UTC"
+  concurrencyPolicy: "Forbid"  # NOT START NEW IF OLD NOT FINISH
+  startingDeadlineSeconds: 86400
+
+  suspend: false
 
   workflowSpec:
     serviceAccountName: argo-workflow
