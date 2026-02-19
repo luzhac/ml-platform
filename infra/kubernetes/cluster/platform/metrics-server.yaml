@@ -1,26 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root-app
+  name: metrics-server
   namespace: argocd
 spec:
   project: default
-
   source:
-    repoURL: https://github.com/luzhac/ml-platform
-    targetRevision: main
-    path: infra/kubernetes/cluster
-    directory:
-      recurse: true
- 
-
+    repoURL: https://kubernetes-sigs.github.io/metrics-server/
+    chart: metrics-server
+    targetRevision: 3.12.0
+    helm:
+      values: |
+        args:
+          - --kubelet-insecure-tls
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
-
+    namespace: kube-system
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
