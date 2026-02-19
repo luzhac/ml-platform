@@ -11,7 +11,7 @@ setting to not for production
 
 
 
-
+ generateName can't use with  apply
 
 
 

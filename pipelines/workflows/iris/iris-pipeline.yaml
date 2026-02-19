@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: iris-ml-pipeline-
+  name: iris-ml-pipeline
   namespace: argo
 spec:
   entrypoint: iris-pipeline
