@@ -11,7 +11,7 @@ args:
   - --auth-mode=server
   - --insecure
 
-kubectl -n argo port-forward svc/argo-server 2746:2746
+kubectl -n argo port-forward svc/argo-workflows-server 2746:2746
 
 
 kubectl create -f hello-world.yaml -n argo
