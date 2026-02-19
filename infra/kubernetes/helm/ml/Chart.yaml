@@ -1,0 +1,15 @@
+apiVersion: v2
+name: challenge
+description: A Helm chart to deploy challenge microservices (signal, data, redis) on EKS
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+
+keywords:
+  - kubernetes
+  - helm
+  - microservices
+  - aws
+  - eks
+

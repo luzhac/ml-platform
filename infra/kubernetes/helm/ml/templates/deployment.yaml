@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.challenge.appName  | quote}}  
+spec:
+  replicas: {{ .Values.challenge.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.challenge.appName  | quote }}      
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.challenge.appName  | quote }}    
+    spec:
+      serviceAccountName: "{{ .Values.challenge.appName }}-sa"
+      containers:
+        - name: {{ .Values.challenge.appName  | quote }}
+          image: {{ .Values.challenge.image   | quote }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.challenge.port }}
+          env:
+            - name: DYNAMODB_TABLE
+              value: {{ .Values.challenge.env.dynamodbTable | quote }}
+            - name: S3_BUCKET
+              value: {{ .Values.challenge.env.s3Bucket | quote }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port:  {{ .Values.challenge.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+ 
+
+          resources:
+            requests:
+              cpu: {{ .Values.challenge.resources.requests.cpu | quote }}
+              memory: {{ .Values.challenge.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.challenge.resources.limits.cpu | quote }}
+              memory: {{ .Values.challenge.resources.limits.memory | quote }}

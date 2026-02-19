@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-mount-sleep
+  namespace: argo
+spec:
+  restartPolicy: Never
+  volumes:
+    - name: etl-data
+      hostPath:
+        path: /mnt/etl-data
+        type: Directory
+  containers:
+    - name: writer
+      image: alpine:3.18
+      command: [sh, -c]
+      args:
+        - |
+          echo "hello from pod $(date)" > /data/debug_from_pod.txt
+          echo "written file, now sleeping..."
+          ls -l /data
+          sleep 1800
+      volumeMounts:
+        - name: etl-data
+          mountPath: /data
