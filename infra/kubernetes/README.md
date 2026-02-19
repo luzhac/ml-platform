@@ -1,4 +1,24 @@
-# install argocd
+# install argo use argocd
+setting to not for production
+```
+    helm:
+      values: |
+        server:
+          secure: false
+          authModes:
+            - server
+```
+
+
+
+
+
+
+
+
+
+------------
+# install argo manul  
 
 ```
 helm repo add argo https://argoproj.github.io/argo-helm
