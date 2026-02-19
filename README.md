@@ -4,6 +4,8 @@
 
 Kubernetes-native machine learning and data engineering project demonstrating **ETL pipelines, workflow orchestration, CI/CD, and MLOps practices** using Argo Workflows, Docker, and GitHub Actions.
 
+Terraform provisions the infrastructure layer. The entire Kubernetes cluster is managed declaratively via GitOps, with ArgoCD controlling both platform services and application workloads.
+
 This repository showcases a **production-style data pipeline** used to ingest, process, and prepare large-scale crypto market data, designed with cloud-native and DevOps best practices.
 
 ---

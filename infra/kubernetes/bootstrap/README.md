@@ -11,6 +11,8 @@ kubectl create secret generic repo-https `
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -f infra/kubernetes/bootstrap/root-app.yaml
+
+kubectl apply -f root-app.yaml
 ```
 
 # 
