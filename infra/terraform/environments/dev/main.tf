@@ -61,5 +61,14 @@ module "ecr" {
   region       = var.region
 }
 
+module "aws_eks_addon" {
+  source       = "../../modules/aws_eks_addon"
+  project_name = var.project_name
+  environment  = var.environment
+  region       = var.region
+  cluster_name = module.eks.cluster_name
+  service_account_role_arn= module.iam_oidc.service_account_role_arn
+}
  
+
  

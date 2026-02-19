@@ -200,3 +200,22 @@ resource "aws_iam_role_policy_attachment" "terraform" {
 }
 
  
+
+resource "aws_iam_role" "ebs_csi_role" {
+  name = "${var.project_name}-ebs-csi-role"
+
+  assume_role_policy = templatefile(
+    "${path.module}/irsa-policy.json",
+    {
+      oidc_provider_arn = var.oidc_provider_arn
+      oidc_host         = local.oidc_host
+      namespace         = "kube-system"
+      service_account   = "ebs-csi-controller-sa"
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_attach" {
+  role       = aws_iam_role.ebs_csi_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
