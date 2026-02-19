@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://github.com/luzhac/ml-platform
     targetRevision: main
-    path: infra/kubernetes/apps
+    path: infra/kubernetes/cluster
  
 
   destination:
