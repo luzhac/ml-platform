@@ -13,6 +13,9 @@ spec:
       values: |
         server:
           secure: false
+          authModes:
+            - server
+
   destination:
     server: https://kubernetes.default.svc
     namespace: argo
