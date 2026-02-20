@@ -67,8 +67,17 @@ module "aws_eks_addon" {
   environment  = var.environment
   region       = var.region
   cluster_name = module.eks.cluster_name
-  service_account_role_arn= module.iam_oidc.service_account_role_arn
+  service_account_role_arn= module.iam_oidc.csi_service_account_role_arn
 }
  
 
+module "cluster_autoscaler" {
+  source       = "../../modules/cluster_autoscaler"
+  project_name = var.project_name
+  environment  = var.environment
+  region       = var.region
+  cluster_name = module.eks.cluster_name
+  service_account_role_arn= module.iam_oidc.as_service_account_role_arn
+}
+ 
  

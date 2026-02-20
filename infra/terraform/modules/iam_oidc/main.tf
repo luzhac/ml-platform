@@ -219,3 +219,24 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_attach" {
   role       = aws_iam_role.ebs_csi_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
+
+
+
+resource "aws_iam_role" "autoscaler_role" {
+  name = "${var.project_name}-cluster-autoscaler-role"
+
+  assume_role_policy = templatefile(
+    "${path.module}/irsa-policy.json",
+    {
+      oidc_provider_arn = var.oidc_provider_arn
+       oidc_host         = local.oidc_host
+      namespace         = "kube-system"
+      service_account   = "cluster-autoscaler"
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "autoscaler_policy" {
+  role       = aws_iam_role.autoscaler_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AutoScalingFullAccess"
+}

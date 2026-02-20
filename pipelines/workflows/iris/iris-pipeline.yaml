@@ -40,30 +40,28 @@ spec:
         image: python:3.11-slim
         command: [python]
         source: |
+          pip install requests pandas -q
+
+          python - <<EOF
           import requests
           import pandas as pd
-          import subprocess
-          import sys
-          
-          # Install required packages
-          subprocess.run(["pip", "install", "requests", "pandas", "-q"], check=True)
-          
+
           url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
-          
+
           print("=" * 50)
           print("STEP 1: FETCHING DATA")
           print("=" * 50)
-          print(f"Downloading from: {url}")
-          
+
           response = requests.get(url)
-          
+
           with open("/mnt/data/iris_raw.csv", "w") as f:
               f.write(response.text)
-          
+
           df = pd.read_csv("/mnt/data/iris_raw.csv")
           print(f"Downloaded {len(df)} records")
           print(f"Columns: {list(df.columns)}")
           print(f"Saved to /mnt/data/iris_raw.csv")
+          EOF
         volumeMounts:
           - name: workdir
             mountPath: /mnt/data
