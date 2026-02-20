@@ -44,7 +44,7 @@ spec:
 
         extraEnvVars:
           AWS_DEFAULT_REGION: eu-west-2
-          
+          MLFLOW_SERVER_ALLOWED_HOSTS: "*"
           # MLFLOW_S3_ENDPOINT_URL: "http://minio.mlflow.svc.cluster.local:9000"
           # MLFLOW_S3_IGNORE_TLS: "true"
 
