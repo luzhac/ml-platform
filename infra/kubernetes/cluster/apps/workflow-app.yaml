@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/luzhac/ml-platform
     targetRevision: main
-    path: pipelines/workflows/etl
+    path: pipelines/workflows/iris
     directory:
       recurse: true
   destination:
