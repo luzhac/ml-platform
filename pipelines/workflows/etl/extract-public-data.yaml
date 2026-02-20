@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: etl-public-data-
+  name: etl-public-data
   namespace: argo
 spec:
   serviceAccountName: argo-workflow
