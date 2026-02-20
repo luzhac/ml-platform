@@ -1,3 +1,4 @@
+# for app use
 resource "aws_s3_bucket" "s3_challenge" {
   bucket = "marscompute-s3-ml"
   tags = {
@@ -37,6 +38,29 @@ resource "aws_s3_bucket_public_access_block" "challenge_public_access" {
   restrict_public_buckets = true
 }
 
+# for mlflow use
+resource "aws_s3_bucket" "mlflow_artifacts" {
+  bucket = "${var.project_name}-marscompute-mlflow-artifacts"
 
+  force_destroy = false
+}
+
+resource "aws_s3_bucket_versioning" "mlflow_versioning" {
+  bucket = aws_s3_bucket.mlflow_artifacts.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "mlflow_sse" {
+  bucket = aws_s3_bucket.mlflow_artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
 
  

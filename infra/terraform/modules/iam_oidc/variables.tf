@@ -22,4 +22,10 @@ variable "oidc_provider_url" {
   type = string
 }
 
+variable "ml_service_account" {}
+variable "ml_namespace" {}
+
+variable "mlflow_s3_arn" {}
+ 
+
  

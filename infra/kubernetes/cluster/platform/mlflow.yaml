@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlflow
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlflow
+
+  source:
+    repoURL: https://community-charts.github.io/helm-charts
+    chart: mlflow
+    targetRevision: 1.8.1    
+    helm:
+      values: |
+        serviceAccount:
+          create: true
+          name: mlflow
+          annotations:
+            eks.amazonaws.com/role-arn: arn:aws:iam::996099991204:role/ml-mlflow-irsa-role
+
+        backendStore:
+          databaseMigration: true
+          databaseConnectionCheck: true
+          postgres:
+            enabled: true
+            host: ml-mlflow-db.ctqem62a42t9.eu-west-2.rds.amazonaws.com
+            port: 5432
+            database: mlflow
+          existingDatabaseSecret:
+            name: postgres-database-secret
+            usernameKey: username
+            passwordKey: password
+
+        artifactRoot:
+          s3:
+            enabled: true
+            bucket: ml-marscompute-mlflow-artifacts
+            path: mlflow/artifacts
+            awsAccessKeyId: ""
+            awsSecretAccessKey: ""
+
+        extraEnvVars:
+          AWS_DEFAULT_REGION: eu-west-2
+          
+          # MLFLOW_S3_ENDPOINT_URL: "http://minio.mlflow.svc.cluster.local:9000"
+          # MLFLOW_S3_IGNORE_TLS: "true"
+
+        service:
+          type: ClusterIP
+          port: 5000
+
+        ingress:
+          enabled: false
+
+        persistence:
+          enabled: true
+          size: 10Gi
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

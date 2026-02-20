@@ -200,6 +200,7 @@ resource "aws_iam_role_policy_attachment" "terraform" {
 }
 
  
+# csi
 
 resource "aws_iam_role" "ebs_csi_role" {
   name = "${var.project_name}-ebs-csi-role"
@@ -220,7 +221,7 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_attach" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
-
+# autoscaler
 
 resource "aws_iam_role" "autoscaler_role" {
   name = "${var.project_name}-cluster-autoscaler-role"
@@ -239,4 +240,47 @@ resource "aws_iam_role" "autoscaler_role" {
 resource "aws_iam_role_policy_attachment" "autoscaler_policy" {
   role       = aws_iam_role.autoscaler_role.name
   policy_arn = "arn:aws:iam::aws:policy/AutoScalingFullAccess"
+}
+
+# mlflow
+resource "aws_iam_role" "mlflow_irsa" {
+  name = "${var.project_name}-mlflow-irsa-role"
+
+  assume_role_policy = templatefile(
+    "${path.module}/irsa-policy.json",
+    {
+      oidc_provider_arn = var.oidc_provider_arn
+      oidc_host         = local.oidc_host
+      namespace         = var.ml_namespace
+      service_account   = var.ml_service_account
+    }
+  )
+}
+
+data "aws_iam_policy_document" "mlflow_s3_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:DeleteObject"
+    ]
+
+    resources = [
+      var.mlflow_s3_arn,
+      "${var.mlflow_s3_arn}/*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "mlflow_s3_policy" {
+  name   = "${var.project_name}-mlflow-s3-policy"
+  policy = data.aws_iam_policy_document.mlflow_s3_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "mlflow_attach" {
+  role       = aws_iam_role.mlflow_irsa.name
+  policy_arn = aws_iam_policy.mlflow_s3_policy.arn
 }

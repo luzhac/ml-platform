@@ -27,3 +27,24 @@ variable "environment" {
   type        = string
   default     = "ml-dev"
 }
+
+ variable "ml_namespace" {
+  description = "ml_namespace"
+  type        = string
+  default     = "mlflow"
+}
+
+ variable "ml_service_account" {
+  description = "ml_service_account"
+  type        = string
+  default     = "mlflow"
+}
+
+variable "mlflow_db_username" {
+  type = string
+}
+
+variable "mlflow_db_password" {
+  type      = string
+  sensitive = true
+}

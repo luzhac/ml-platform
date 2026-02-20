@@ -52,6 +52,9 @@ module "iam_oidc" {
   oidc_provider_arn = module.eks.oidc_provider_arn
   oidc_provider_url = module.eks.oidc_provider_url
   namespace=var.namespace
+  ml_namespace=var.ml_namespace
+  ml_service_account=var.ml_service_account
+  mlflow_s3_arn = module.s3.mlflow_s3_arn
 }
 
 module "ecr" {
@@ -80,4 +83,16 @@ module "cluster_autoscaler" {
   service_account_role_arn= module.iam_oidc.as_service_account_role_arn
 }
  
+module "mlflow_rds" {
+  source = "../../modules/rds"
+   environment  = var.environment
+  region       = var.region
+  project_name        = var.project_name
+
+  mlflow_db_username  = var.mlflow_db_username
+  mlflow_db_password  = var.mlflow_db_password
+  rds_sg_id           = module.eks.cluster_security_group_id
+  vpc_id = module.network.vpc_id
+  private_subnet_ids = module.network.subnet_private_ids
  
+}
