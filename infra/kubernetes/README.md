@@ -28,6 +28,8 @@ kubectl create namespace argocd
 
 helm install argocd argo/argo-cd -n argocd
 ```
+# argo
+name vs generate name (it is not deployment, name same will not build if sync it)
 
 
 # setup argocd
