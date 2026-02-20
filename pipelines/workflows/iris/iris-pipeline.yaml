@@ -7,6 +7,7 @@ spec:
   entrypoint: iris-pipeline
   serviceAccountName: argo-workflow
 
+  # Shared volume between steps
   volumeClaimTemplates:
     - metadata:
         name: workdir
@@ -20,7 +21,7 @@ spec:
   templates:
 
     # =========================
-    # DAG PIPELINE
+    # Main DAG Definition
     # =========================
     - name: iris-pipeline
       dag:
@@ -37,7 +38,7 @@ spec:
             dependencies: [process-data]
 
     # =========================
-    # STEP 1 - FETCH
+    # Step 1: Fetch Dataset
     # =========================
     - name: fetch-data-template
       script:
@@ -50,10 +51,9 @@ spec:
           import requests
           import pandas as pd
 
-          url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
-
           print("STEP 1: FETCHING DATA")
 
+          url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
           response = requests.get(url)
 
           with open("/mnt/data/iris_raw.csv", "w") as f:
@@ -66,7 +66,7 @@ spec:
             mountPath: /mnt/data
 
     # =========================
-    # STEP 2 - PROCESS
+    # Step 2: Data Processing
     # =========================
     - name: process-data-template
       script:
@@ -85,9 +85,11 @@ spec:
 
           numeric_cols = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
 
+          # Encode target labels
           le = LabelEncoder()
           df['species_encoded'] = le.fit_transform(df['species'])
 
+          # Normalize numeric features
           scaler = StandardScaler()
           df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
@@ -99,7 +101,7 @@ spec:
             mountPath: /mnt/data
 
     # =========================
-    # STEP 3 - TRAIN MODEL
+    # Step 3: Train Model and Log to MLflow
     # =========================
     - name: train-model-template
       script:
@@ -107,16 +109,28 @@ spec:
         command: [python]
         source: |
           import subprocess
-          subprocess.run(["pip", "install", "pandas", "scikit-learn", "joblib", "-q"], check=True)
+          subprocess.run([
+              "pip", "install",
+              "pandas",
+              "scikit-learn",
+              "mlflow",
+              "-q"
+          ], check=True)
 
           import pandas as pd
-          import joblib
-          import json
+          import mlflow
+          import mlflow.sklearn
           from sklearn.model_selection import train_test_split
           from sklearn.linear_model import LogisticRegression
           from sklearn.metrics import accuracy_score
 
-          print("STEP 3: TRAINING MODEL")
+          print("STEP 3: TRAINING MODEL AND LOGGING TO MLFLOW")
+
+          # Set MLflow tracking server (internal cluster DNS)
+          mlflow.set_tracking_uri("http://mlflow.mlflow.svc.cluster.local:5000")
+
+          # Create or use experiment
+          mlflow.set_experiment("iris-experiment")
 
           df = pd.read_csv("/mnt/data/iris_processed.csv")
 
@@ -127,27 +141,27 @@ spec:
               X, y, test_size=0.2, random_state=42
           )
 
-          model = LogisticRegression(max_iter=200)
-          model.fit(X_train, y_train)
+          with mlflow.start_run():
 
-          y_pred = model.predict(X_test)
-          accuracy = accuracy_score(y_test, y_pred)
+              model = LogisticRegression(max_iter=200)
+              model.fit(X_train, y_train)
 
-          print(f"Model accuracy: {accuracy:.4f}")
+              y_pred = model.predict(X_test)
+              accuracy = accuracy_score(y_test, y_pred)
 
-          # Save model artifact
-          joblib.dump(model, "/mnt/data/model.pkl")
+              print(f"Model accuracy: {accuracy:.4f}")
 
-          # Save metrics
-          metrics = {
-              "accuracy": float(accuracy)
-          }
+              # Log parameters
+              mlflow.log_param("model_type", "LogisticRegression")
+              mlflow.log_param("max_iter", 200)
 
-          with open("/mnt/data/metrics.json", "w") as f:
-              json.dump(metrics, f, indent=2)
+              # Log metrics
+              mlflow.log_metric("accuracy", accuracy)
 
-          print("Model saved to /mnt/data/model.pkl")
-          print("Metrics saved to /mnt/data/metrics.json")
+              # Log model artifact (stored in S3 via MLflow backend)
+              mlflow.sklearn.log_model(model, "model")
+
+              print("Model and metrics successfully logged to MLflow.")
         volumeMounts:
           - name: workdir
             mountPath: /mnt/data

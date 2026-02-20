@@ -1,3 +1,8 @@
+# install mlflow with argocd
+create ns and secret for db username and password
+
+kubectl port-forward svc/mlflow 5000:5000 -n mlflow
+
 # install argo use argocd
 setting to not for production
 ```
