@@ -13,7 +13,7 @@ spec:
       recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: argo
+    namespace: pipeline
   syncPolicy:
     automated:
       prune: true
