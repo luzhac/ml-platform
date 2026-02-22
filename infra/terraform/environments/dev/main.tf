@@ -81,6 +81,12 @@ module "cluster_autoscaler" {
   region       = var.region
   cluster_name = module.eks.cluster_name
   service_account_role_arn= module.iam_oidc.as_service_account_role_arn
+
+  depends_on = [
+  module.eks,
+  module.iam_oidc,
+  module.aws_eks_addon
+]
 }
  
 module "mlflow_rds" {

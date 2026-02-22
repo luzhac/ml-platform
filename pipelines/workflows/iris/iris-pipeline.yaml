@@ -110,7 +110,7 @@ spec:
         source: |
           import subprocess
           subprocess.run([
-              "pip", "install","bobo3",
+              "pip", "install","boto3",
               "pandas",
               "scikit-learn",
               "mlflow",

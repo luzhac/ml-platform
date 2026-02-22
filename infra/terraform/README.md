@@ -20,7 +20,7 @@ kubectl config current-context
 ```
 # only for manul use, created already in eks.tf
 aws eks associate-access-policy `
-  --cluster-name challenge-dev-cluster `
+  --cluster-name ml-dev-cluster `
   --principal-arn arn:aws:iam::996099991204:user/user-admin `
   --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy `
   --access-scope type=cluster
