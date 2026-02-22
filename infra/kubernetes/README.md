@@ -66,7 +66,7 @@ kubectl get pods -n argocd
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 
 
-admin   gA5Sj57KIJzhjZS3
+admin   nYTNGz8Mktg48ais
 $secret = kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
 [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($secret))
 

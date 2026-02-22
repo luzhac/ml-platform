@@ -31,7 +31,7 @@ resource "aws_db_instance" "mlflow" {
   username                = var.mlflow_db_username
   password                = var.mlflow_db_password
   db_name                 = "mlflow"
-  skip_final_snapshot     = false
+  skip_final_snapshot     = true
   publicly_accessible     = false
   vpc_security_group_ids  = [aws_security_group.mlflow_rds.id]
   db_subnet_group_name    = aws_db_subnet_group.mlflow.name

@@ -37,7 +37,7 @@ variable "environment" {
  variable "ml_service_account" {
   description = "ml_service_account"
   type        = string
-  default     = "mlflow"
+  default     = "argo-workflow"
 }
 
 variable "mlflow_db_username" {

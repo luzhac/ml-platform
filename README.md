@@ -44,8 +44,10 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 kubectl create namespace mlflow
 kubectl create secret generic postgres-database-secret `
   -n mlflow `
-  --from-literal=username=$env:postgres_username  `
-  --from-literal=password=$env:postgres_password
+  --from-literal=username=$env:TF_VAR_mlflow_db_username   `
+  --from-literal=password=$env:TF_VAR_mlflow_db_password 
+
+## setup workflows
 
 
 ```
