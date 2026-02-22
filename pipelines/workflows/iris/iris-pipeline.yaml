@@ -2,10 +2,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: iris-ml-pipeline
-  namespace: argo
+  namespace: pipeline
 spec:
   entrypoint: iris-pipeline
-  serviceAccountName: argo-workflow
+  serviceAccountName: pipeline-service-account
 
   # Shared volume between steps
   volumeClaimTemplates:

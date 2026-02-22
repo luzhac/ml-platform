@@ -251,8 +251,8 @@ resource "aws_iam_role" "mlflow_irsa" {
     {
       oidc_provider_arn = var.oidc_provider_arn
       oidc_host         = local.oidc_host
-      namespace         = var.ml_namespace
-      service_account   = var.ml_service_account
+      namespace         = var.pipeline_namespace
+      service_account   = var.pipeline_service_account
     }
   )
 }

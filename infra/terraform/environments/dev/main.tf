@@ -52,8 +52,8 @@ module "iam_oidc" {
   oidc_provider_arn = module.eks.oidc_provider_arn
   oidc_provider_url = module.eks.oidc_provider_url
   namespace=var.namespace
-  ml_namespace=var.ml_namespace
-  ml_service_account=var.ml_service_account
+  pipeline_namespace=var.pipeline_namespace
+  pipeline_service_account=var.pipeline_service_account
   mlflow_s3_arn = module.s3.mlflow_s3_arn
 }
 

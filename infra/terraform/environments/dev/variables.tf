@@ -28,16 +28,16 @@ variable "environment" {
   default     = "ml-dev"
 }
 
- variable "ml_namespace" {
-  description = "ml_namespace"
+ variable "pipeline_namespace" {
+  description = "pipeline_namespace"
   type        = string
-  default     = "mlflow"
+  default     = "pipeline"
 }
 
- variable "ml_service_account" {
-  description = "ml_service_account"
+ variable "pipeline_service_account" {
+  description = "pipeline_service_account"
   type        = string
-  default     = "argo-workflow"
+  default     = "pipeline-sa"
 }
 
 variable "mlflow_db_username" {
