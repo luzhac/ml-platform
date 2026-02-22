@@ -242,7 +242,7 @@ resource "aws_iam_role_policy_attachment" "autoscaler_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AutoScalingFullAccess"
 }
 
-# mlflow
+# mlflow-pipline
 resource "aws_iam_role" "mlflow_irsa" {
   name = "${var.project_name}-mlflow-irsa-role"
 
