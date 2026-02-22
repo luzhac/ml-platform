@@ -6,6 +6,7 @@ metadata:
 spec:
   entrypoint: iris-pipeline
   serviceAccountName: pipeline-service-account
+  
 
   # Shared volume between steps
   volumeClaimTemplates:
