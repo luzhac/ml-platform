@@ -37,7 +37,7 @@ variable "environment" {
  variable "pipeline_service_account" {
   description = "pipeline_service_account"
   type        = string
-  default     = "pipeline-sa"
+  default     = "pipeline-service-account"
 }
 
 variable "mlflow_db_username" {
