@@ -124,9 +124,10 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update Kubernetes image tag
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" inference/k8s/20-deployment.yaml
-
+          sed -i "s|PLACEHOLDER|$IMAGE_TAG|" inference/k8s/20-deployment.yaml
       - name: Commit updated image tag
         run: |
             git config user.name "github-actions"
