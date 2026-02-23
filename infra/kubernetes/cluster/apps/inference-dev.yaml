@@ -9,7 +9,7 @@ spec:
   source:
     repoURL: https://github.com/luzhac/ml-platform
     targetRevision: main
-    path: inference/app/k8s   
+    path: inference/k8s   
 
   destination:
     server: https://kubernetes.default.svc
