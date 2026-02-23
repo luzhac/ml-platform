@@ -1,0 +1,239 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: iris-ml-pipeline
+  namespace: pipeline
+spec:
+  entrypoint: iris-pipeline
+  serviceAccountName: pipeline-service-account
+
+  volumeClaimTemplates:
+    - metadata:
+        name: workdir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp2
+        resources:
+          requests:
+            storage: 200Mi
+
+  templates:
+    - name: iris-pipeline
+      dag:
+        tasks:
+          - name: fetch-data
+            template: fetch-data-template
+
+          - name: process-data
+            template: process-data-template
+            dependencies: [fetch-data]
+
+          - name: train-and-register
+            template: train-and-register-template
+            dependencies: [process-data]
+
+    - name: fetch-data-template
+      script:
+        image: python:3.11-slim
+        command: [python]
+        source: |
+          import subprocess
+          subprocess.run(["pip", "install", "requests", "pandas", "-q"], check=True)
+          import requests, pandas as pd
+
+          url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
+          r = requests.get(url, timeout=30)
+          r.raise_for_status()
+
+          with open("/mnt/data/iris_raw.csv", "w", encoding="utf-8") as f:
+              f.write(r.text)
+
+          df = pd.read_csv("/mnt/data/iris_raw.csv")
+          print("Downloaded rows:", len(df))
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/data
+
+    - name: process-data-template
+      script:
+        image: python:3.11-slim
+        command: [python]
+        source: |
+          import subprocess
+          subprocess.run(["pip", "install", "pandas", "scikit-learn", "-q"], check=True)
+
+          import pandas as pd
+          from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+          df = pd.read_csv("/mnt/data/iris_raw.csv")
+
+          numeric_cols = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+
+          le = LabelEncoder()
+          df['species_encoded'] = le.fit_transform(df['species'])
+
+          scaler = StandardScaler()
+          df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+
+          df.to_csv("/mnt/data/iris_processed.csv", index=False)
+          print("Preprocess done.")
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/data
+
+    - name: train-and-register-template
+      script:
+        image: python:3.11-slim
+        command: [python]
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: "http://mlflow.mlflow.svc.cluster.local:5000"
+          - name: MLFLOW_EXPERIMENT
+            value: "iris-experiment"
+          - name: REGISTERED_MODEL_NAME
+            value: "iris-model"
+          - name: PROMOTE_IF_ACCURACY_GE
+            value: "0.95"
+          - name: TARGET_ALIAS
+            value: "production"
+        source: |
+          import json
+          import os
+          import subprocess
+
+          subprocess.run(["pip", "install",
+              "boto3",
+              "pandas",
+              "scikit-learn",
+              "mlflow",
+              "-q"
+          ], check=True)
+
+          import pandas as pd
+          import mlflow
+          import mlflow.sklearn
+          from mlflow.tracking import MlflowClient
+          from mlflow.models import infer_signature
+
+          from sklearn.model_selection import train_test_split
+          from sklearn.linear_model import LogisticRegression
+          from sklearn.metrics import accuracy_score
+          import numpy as np
+
+          def compute_baseline_bins(df, features, n_bins=10):
+              payload = {"baseline_bins": []}
+              for f in features:
+                  x = pd.to_numeric(df[f], errors="coerce").dropna().astype(float).values
+                  if len(x) < 10:
+                      continue
+                  edges = np.quantile(x, np.linspace(0, 1, n_bins + 1)).tolist()
+                  # ensure strictly increasing edges
+                  for i in range(1, len(edges)):
+                      if edges[i] <= edges[i-1]:
+                          edges[i] = edges[i-1] + 1e-6
+                  counts, _ = np.histogram(x, bins=np.array(edges, dtype=float))
+                  payload["baseline_bins"].append({
+                      "feature": f,
+                      "edges": edges,
+                      "expected_counts": counts.astype(int).tolist(),
+                  })
+              return payload
+
+          tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
+          experiment_name = os.environ.get("MLFLOW_EXPERIMENT", "iris-experiment")
+          registered_model_name = os.environ.get("REGISTERED_MODEL_NAME", "iris-model")
+          promote_threshold = float(os.environ.get("PROMOTE_IF_ACCURACY_GE", "0.0"))
+          target_alias = os.environ.get("TARGET_ALIAS", "production")
+
+          mlflow.set_tracking_uri(tracking_uri)
+          mlflow.set_experiment(experiment_name)
+
+          df = pd.read_csv("/mnt/data/iris_processed.csv")
+
+          features = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+          X = df[features]
+          y = df['species_encoded']
+
+          X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+          with mlflow.start_run() as run:
+              model = LogisticRegression(max_iter=200)
+              model.fit(X_train, y_train)
+
+              y_pred = model.predict(X_test)
+              acc = float(accuracy_score(y_test, y_pred))
+
+              mlflow.log_param("model_type", "LogisticRegression")
+              mlflow.log_param("max_iter", 200)
+              mlflow.log_metric("accuracy", acc)
+
+              signature = infer_signature(X_train, model.predict(X_train))
+              input_example = X_train.iloc[:3]
+
+              # baseline drift bins (for inference PSI)
+              baseline_payload = compute_baseline_bins(X_train, features, n_bins=10)
+              mlflow.log_dict(baseline_payload, "baseline_stats.json")
+
+              # MLflow sklearn log_model API changed over time: 'artifact_path' -> 'name'
+              try:
+                  model_info = mlflow.sklearn.log_model(
+                      sk_model=model,
+                      name="model",
+                      signature=signature,
+                      input_example=input_example,
+                      registered_model_name=registered_model_name,
+                  )
+              except TypeError:
+                  model_info = mlflow.sklearn.log_model(
+                      sk_model=model,
+                      artifact_path="model",
+                      signature=signature,
+                      input_example=input_example,
+                      registered_model_name=registered_model_name,
+                  )
+
+              print("Accuracy:", acc)
+              print("Run ID:", run.info.run_id)
+
+              client = MlflowClient()
+
+              # Find latest created version for this run
+              versions = client.search_model_versions(f"name='{registered_model_name}'")
+              created = [v for v in versions if v.run_id == run.info.run_id]
+              if not created:
+                  raise RuntimeError("Model version not found for run (registry registration failed)")
+              # pick the max version
+              mv = max(created, key=lambda v: int(v.version))
+              version = mv.version
+              print("Registered model version:", version)
+
+              # Set candidate alias always (useful for CI/CD)
+              try:
+                  client.set_registered_model_alias(registered_model_name, "candidate", version)
+                  print("Set alias candidate ->", version)
+              except Exception as e:
+                  print("Alias not supported / failed:", e)
+
+              # Promote to production alias if passes threshold
+              if acc >= promote_threshold:
+                  try:
+                      client.set_registered_model_alias(registered_model_name, target_alias, version)
+                      print(f"Promoted alias {target_alias} ->", version)
+                  except Exception as e:
+                      print("Promote alias failed:", e)
+                  # stage API exists in many installs; not required if you use aliases
+                  try:
+                      client.transition_model_version_stage(
+                          name=registered_model_name,
+                          version=version,
+                          stage="Production",
+                          archive_existing_versions=True,
+                      )
+                      print("Transitioned stage to Production")
+                  except Exception as e:
+                      print("Stage transition skipped/failed:", e)
+              else:
+                  print("Not promoting to production; threshold:", promote_threshold)
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/data

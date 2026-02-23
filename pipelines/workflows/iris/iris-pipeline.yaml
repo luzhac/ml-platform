@@ -111,30 +111,34 @@ spec:
         source: |
           import subprocess
           subprocess.run([
-              "pip", "install","boto3",
+              "pip", "install",
+              "boto3",
               "pandas",
               "scikit-learn",
               "mlflow",
               "-q"
           ], check=True)
 
+          import os
           import pandas as pd
           import mlflow
           import mlflow.sklearn
+          from mlflow.tracking import MlflowClient
+
           from sklearn.model_selection import train_test_split
           from sklearn.linear_model import LogisticRegression
           from sklearn.metrics import accuracy_score
 
-          print("STEP 3: TRAINING MODEL AND LOGGING TO MLFLOW")
+          print("STEP 3: TRAINING MODEL, LOGGING TO MLFLOW, REGISTERING + ALIASING")
 
-          # Set MLflow tracking server (internal cluster DNS)
           mlflow.set_tracking_uri("http://mlflow.mlflow.svc.cluster.local:5000")
-
-          # Create or use experiment
           mlflow.set_experiment("iris-experiment")
 
-          df = pd.read_csv("/mnt/data/iris_processed.csv")
+          # Registry name + alias you want to point to "the deployable version"
+          REGISTERED_MODEL_NAME = os.environ.get("REGISTERED_MODEL_NAME", "iris-logreg")
+          DEPLOY_ALIAS = os.environ.get("DEPLOY_ALIAS", "staging")   # e.g. staging / champion / production
 
+          df = pd.read_csv("/mnt/data/iris_processed.csv")
           X = df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']]
           y = df['species_encoded']
 
@@ -142,27 +146,47 @@ spec:
               X, y, test_size=0.2, random_state=42
           )
 
-          with mlflow.start_run():
+          client = MlflowClient()
+
+          with mlflow.start_run() as run:
+              run_id = run.info.run_id
 
               model = LogisticRegression(max_iter=200)
               model.fit(X_train, y_train)
 
               y_pred = model.predict(X_test)
               accuracy = accuracy_score(y_test, y_pred)
-
               print(f"Model accuracy: {accuracy:.4f}")
 
-              # Log parameters
               mlflow.log_param("model_type", "LogisticRegression")
               mlflow.log_param("max_iter", 200)
-
-              # Log metrics
               mlflow.log_metric("accuracy", accuracy)
 
-              # Log model artifact (stored in S3 via MLflow backend)
-              mlflow.sklearn.log_model(model, "model")
+              # Log artifact
+              mlflow.sklearn.log_model(model, artifact_path="model")
 
-              print("Model and metrics successfully logged to MLflow.")
+              # Register from run artifact
+              model_uri = f"runs:/{run_id}/model"
+              print(f"Registering model: {REGISTERED_MODEL_NAME} from {model_uri}")
+              mv = mlflow.register_model(model_uri=model_uri, name=REGISTERED_MODEL_NAME)
+              print(f"Registered: name={mv.name}, version={mv.version}")
+
+              # Tags (optional but very "platform" / audit-friendly)
+              client.set_model_version_tag(mv.name, mv.version, "metric.accuracy", f"{accuracy:.6f}")
+              client.set_model_version_tag(mv.name, mv.version, "pipeline", "iris-argo-workflow")
+              client.set_model_version_tag(mv.name, mv.version, "run_id", run_id)
+
+              # Alias (recommended over stages in newer MLflow workflows)
+              # This points e.g. "staging" -> latest version you just trained
+              print(f"Setting alias '{DEPLOY_ALIAS}' -> version {mv.version}")
+              client.set_registered_model_alias(name=mv.name, alias=DEPLOY_ALIAS, version=mv.version)
+
+              print("✅ Model logged, registered, tagged, and aliased.")
+        env:
+          - name: REGISTERED_MODEL_NAME
+            value: "iris-model"
+          - name: DEPLOY_ALIAS
+            value: "staging"
         volumeMounts:
           - name: workdir
             mountPath: /mnt/data

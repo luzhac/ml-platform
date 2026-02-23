@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-inference
+  namespace: inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-inference
+  template:
+    metadata:
+      labels:
+        app: ml-inference
+    spec:
+      serviceAccountName: inference-service-account
+      containers:
+        - name: api
+          image: YOUR_ECR_OR_DOCKERHUB_IMAGE:TAG
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: "http://mlflow.mlflow.svc.cluster.local:5000"
+            - name: MODEL_NAME
+              value: "iris-model"
+            - name: MODEL_ALIAS
+              value: "production"
+            - name: LOG_LEVEL
+              value: "INFO"
+            # Optional: protect /model/reload
+            # - name: API_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: inference-api-key
+            #       key: api_key
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
