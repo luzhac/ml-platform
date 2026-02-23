@@ -22,7 +22,7 @@ spec:
             - containerPort: 8000
           env:
             - name: MLFLOW_TRACKING_URI
-              value: "http://localhost:5000"
+              value: "http://mlflow.mlflow.svc.cluster.local:5000"
             - name: MODEL_NAME
               value: "iris-model"
             - name: MODEL_ALIAS
