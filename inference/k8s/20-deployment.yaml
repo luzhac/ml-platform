@@ -16,7 +16,7 @@ spec:
       serviceAccountName: inference-service-account
       containers:
         - name: api
-          image: 996099991204.dkr.ecr.eu-west-2.amazonaws.com/marscompute-ml:4c52afb038ef29213dc2610af9202b991749054c
+          image: 996099991204.dkr.ecr.eu-west-2.amazonaws.com/marscompute-ml:98ca55c180d164c48f02c17e56c5ee9dab661116
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
