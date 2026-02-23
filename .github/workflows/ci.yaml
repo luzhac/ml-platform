@@ -122,3 +122,15 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG inference/
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update Kubernetes image tag
+        run: |
+          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|" inference/k8s/20-deployment.yaml
+
+      - name: Commit updated image tag
+        run: |
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add inference/k8s/20-deployment.yaml
+            git commit -m "Update image tag to $IMAGE_TAG" || echo "No changes"
+            git push
