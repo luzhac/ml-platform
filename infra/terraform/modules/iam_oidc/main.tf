@@ -284,3 +284,23 @@ resource "aws_iam_role_policy_attachment" "mlflow_attach" {
   role       = aws_iam_role.mlflow_irsa.name
   policy_arn = aws_iam_policy.mlflow_s3_policy.arn
 }
+
+
+# inference role
+resource "aws_iam_role" "inference_irsa" {
+  name = "${var.project_name}-inference-irsa-role"
+
+  assume_role_policy = templatefile(
+    "${path.module}/irsa-policy.json",
+    {
+      oidc_provider_arn = var.oidc_provider_arn
+      oidc_host         = local.oidc_host
+      namespace         = var.inference_namespace
+      service_account   = var.inference_service_account
+    }
+  )
+}
+resource "aws_iam_role_policy_attachment" "mlflow_attach_inference" {
+  role       = aws_iam_role.inference_irsa.name
+  policy_arn = aws_iam_policy.mlflow_s3_policy.arn
+}

@@ -40,6 +40,18 @@ variable "environment" {
   default     = "pipeline-service-account"
 }
 
+  variable "inference_namespace" {
+  description = "inference_namespace"
+  type        = string
+  default     = "inference"
+}
+ 
+ variable "inference_service_account" {
+  description = "inference_service_account"
+  type        = string
+  default     = "inference-service-account"
+}
+
 variable "mlflow_db_username" {
   type = string
 }

@@ -25,6 +25,9 @@ variable "oidc_provider_url" {
 variable "pipeline_service_account" {}
 variable "pipeline_namespace" {}
 
+variable "inference_namespace" {}
+variable "inference_service_account" {}
+
 variable "mlflow_s3_arn" {}
  
 

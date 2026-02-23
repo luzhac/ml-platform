@@ -54,6 +54,8 @@ module "iam_oidc" {
   namespace=var.namespace
   pipeline_namespace=var.pipeline_namespace
   pipeline_service_account=var.pipeline_service_account
+  inference_namespace=var.inference_namespace
+  inference_service_account=var.inference_service_account
   mlflow_s3_arn = module.s3.mlflow_s3_arn
 }
 
