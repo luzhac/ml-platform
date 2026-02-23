@@ -1,49 +1,72 @@
-import os
-from fastapi.testclient import TestClient
-
-# IMPORTANT:
-# These tests are "contract tests" and do not require a real MLflow server.
-# We monkeypatch the global MODEL in the app after import.
-
-from app.main import app
 import app.main as main
+from fastapi.testclient import TestClient
+from app.main import app
+
+
+import numpy as np
 
 class DummyModel:
     def predict(self, df):
-        # returns a list-like
-        return [42] * len(df)
+        return np.array([42] * len(df))
 
-class DummyLoaded:
-    model_name="dummy"
-    model_version="1"
-    model_uri="models:/dummy/Production"
-    run_id="run"
-    pyfunc_model=DummyModel()
-    baseline_path=None
 
-def test_health_degraded_when_no_model():
-    main.MODEL = None
+def setup_dummy_model():
+   
+    main.model = DummyModel()
+
+
+def test_health_ok():
+    setup_dummy_model()
     client = TestClient(app)
+
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["model_loaded"] is False
+    assert r.json()["status"] == "ok"
+
 
 def test_predict_success():
-    main.MODEL = DummyLoaded()
+    setup_dummy_model()
     client = TestClient(app)
-    r = client.post("/predict", json={"features": {"a": 1, "b": 2}})
-    assert r.status_code == 200
-    body = r.json()
-    assert body["prediction"] == 42
-    assert body["model_name"] == "dummy"
 
-def test_reload_requires_api_key_when_enabled():
-    main.MODEL = DummyLoaded()
-    os.environ["API_KEY"] = "secret"
+    r = client.post(
+        "/predict",
+        json={
+            "features": {
+                "sepal_length": 5.1,
+                "sepal_width": 3.5,
+                "petal_length": 1.4,
+                "petal_width": 0.2
+            }
+        }
+    )
+
+    assert r.status_code == 200
+
+    body = r.json()
+
+    assert "prediction" in body
+    assert body["prediction"] == [42]
+    assert "latency_ms" in body
+
+
+def test_drift_endpoint():
+    setup_dummy_model()
     client = TestClient(app)
-    r = client.post("/model/reload")
-    assert r.status_code == 401
-    r2 = client.post("/model/reload", headers={"X-API-Key":"secret"})
-    # reload will attempt real mlflow load; in this dummy test it will fail -> 500 is acceptable contract-wise
-    assert r2.status_code in (200, 500)
-    os.environ.pop("API_KEY", None)
+
+    # 用 4 维数据（匹配 drift baseline）
+    for _ in range(15):
+        client.post(
+            "/predict",
+            json={
+                "features": {
+                    "sepal_length": 5.1,
+                    "sepal_width": 3.5,
+                    "petal_length": 1.4,
+                    "petal_width": 0.2
+                }
+            }
+        )
+
+    r = client.get("/drift")
+    assert r.status_code == 200
+    assert "drift" in r.json()

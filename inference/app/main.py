@@ -5,13 +5,34 @@ from pydantic import BaseModel
 from typing import Dict, Any
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import Response
+from contextlib import asynccontextmanager
 
 from app.mlflow_loader import load_production_model
 from app.metrics import REQUEST_COUNT, REQUEST_ERRORS, REQUEST_LATENCY
 from app.drift import DriftMonitor
 
 
+model = None
+drift_monitor = DriftMonitor()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global model
+    try:
+        model = load_production_model()
+        print("[SYSTEM] Model loaded successfully")
+    except Exception as e:
+        print(f"[SYSTEM] Model load failed: {e}")
+        model = None
+    yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
+    docs_url="/swagger",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
     title="Iris Production Inference API",
     version="1.0.0"
 )
@@ -24,12 +45,7 @@ class PredictionRequest(BaseModel):
     features: Dict[str, Any]
 
 
-@app.on_event("startup")
-def startup_event():
-    global model
-    model = load_production_model()
-    print("[SYSTEM] Model loaded successfully")
-
+ 
 
 @app.get("/health")
 def health():

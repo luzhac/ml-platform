@@ -8,7 +8,7 @@ class DriftMonitor:
         self.window_size = window_size
         self.recent_data = []
 
-        # 简单 baseline（Iris 训练均值）
+       
         self.baseline_mean = np.array([0, 0, 0, 0])
 
     def update(self, feature_array):
