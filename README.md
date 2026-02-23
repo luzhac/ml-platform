@@ -1,210 +1,267 @@
 
-# setup
-```
-# install aws rescource using terraform
-$env:AWS_PROFILE="second-aws"
+#  ML Engineering Platform
 
+Cloud-native Machine Learning Platform built on **Amazon EKS**, designed with **GitOps, Infrastructure as Code, and  MLOps practices**.
 
+This repository demonstrates how to build, operate, and scale a Kubernetes-native ML platform using:
 
-ml-engineering\infra\terraform\environments\dev
-terraform apply
-
-# setup context to connnet kubenetes in local
-
-aws eks associate-access-policy `
-  --cluster-name ml-dev-cluster `
-  --principal-arn arn:aws:iam::996099991204:user/user-admin `
-  --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy `
-  --access-scope type=cluster
-
-aws eks update-kubeconfig   --region eu-west-2  --name ml-dev-cluster 
-kubectl config use-context arn:aws:eks:eu-west-2:996099991204:cluster/ml-dev-cluster
-
-# install argocd
-
-kubectl create namespace argocd
-kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-kubectl create secret generic repo-https `
-  -n argocd `
-  --from-literal=url=https://github.com/luzhac/ml-platform `
-  --from-literal=username=$env:GH_USER `
-  --from-literal=password=$env:GH_TOKEN `
-  --dry-run=client -o yaml | kubectl apply -f -
-
-kubectl apply -f infra/kubernetes/bootstrap/root-app.yaml
-
-## setup argo ui
-$secret = kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
-[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($secret))
-
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-
-## setup mlflow username and password
-kubectl create namespace mlflow
-kubectl create secret generic postgres-database-secret `
-  -n mlflow `
-  --from-literal=username=$env:TF_VAR_mlflow_db_username   `
-  --from-literal=password=$env:TF_VAR_mlflow_db_password 
-
-## setup workflows
-
-
-```
-
-
-# ml-engineering
-
-Kubernetes-native machine learning and data engineering project demonstrating **ETL pipelines, workflow orchestration, CI/CD, and MLOps practices** using Argo Workflows, Docker, and GitHub Actions.
-
-Terraform provisions the infrastructure layer. The entire Kubernetes cluster is managed declaratively via GitOps, with ArgoCD controlling both platform services and application workloads.
-
-This repository showcases a **production-style data pipeline** used to ingest, process, and prepare large-scale crypto market data, designed with cloud-native and DevOps best practices.
+* Terraform (Infrastructure as Code)
+* Amazon EKS
+* ArgoCD (GitOps)
+* Argo Workflows (Pipeline orchestration)
+* MLflow (Experiment tracking)
+* Docker & GitHub Actions (CI/CD)
 
 ---
 
-##  Project Overview
-
-The project implements a **daily automated ETL workflow** that:
-
-* Fetches raw market data 
-* Cleans, validates, and aggregates large CSV datasets
-* Produces processed datasets ready for analytics or ML training
-* Runs on a **scheduled, containerized workflow** using **Argo CronWorkflows**
-
-
----
-
-## 🏗️ Architecture
+#  Architecture Overview
 
 ```
-┌──────────────┐
-│ GitHub       │
-│  (Source)    │
-└──────┬───────┘
-       │
-       │ GitHub Actions (CI)
-       ▼
-┌──────────────────────┐
-│ Docker Images        │
-│  fetcher / processor│
-└──────┬───────────────┘
-       │
-       │ Argo CD / kubectl
-       ▼
-┌─────────────────────────────┐
-│ Argo CronWorkflow (Daily)   │
-│                             │
-│  ┌──────────┐  ┌─────────┐ │
-│  │ Fetch    │→ │ Process │ │
-│  │ Data     │  │ ETL     │ │
-│  └──────────┘  └─────────┘ │
-│                             │
-└─────────────────────────────┘
-       │
-       ▼
-Processed datasets (CSV / Parquet-ready)
+Terraform → AWS (VPC, EKS, IAM, RDS, S3)
+                ↓
+            ArgoCD (GitOps)
+                ↓
+         Argo Workflows (ETL + ML)
+                ↓
+            MLflow (Tracking)
+                ↓
+             S3 (Artifacts)
 ```
 
 ---
 
+#  Multi-Environment Strategy
 
+The platform supports environment isolation.
 
----
+```
+infra/terraform/environments/
+  ├── dev/
+  ├── staging/  
+  └── prod/      
+```
 
-## 🔄 ETL Pipeline Details
+Design principles:
 
-### 1️⃣ Fetch Stage
+* Separate Terraform state per environment
+* Independent EKS clusters per environment
+* Dedicated RDS & S3 per environment
+* Namespace isolation inside cluster
+* No shared secrets across environments
 
-* Downloads raw Binance futures kline data
-* Stores data in a structured raw-data directory
-* Implemented as a **containerized Python job**
+This enables safe promotion:
 
-### 2️⃣ Process Stage
-
-* Validates CSV files
-* Handles missing / malformed data
-* Aggregates large datasets efficiently using pandas
-* Outputs cleaned, processed datasets
-
-
-
----
-
-## ⏱️ Workflow Orchestration (Argo)
-
-* Uses **Argo Workflows & CronWorkflows**
-* Runs **daily scheduled ETL jobs**
-* todo:
-
-  * Retry strategies
-  * Step dependencies
-  * Failure visibility via Argo UI
-
-
+```
+dev → staging → prod
+```
 
 ---
 
-## 🚀 CI/CD & Automation
+#  Workflow Orchestration
 
-* **GitHub Actions** used for:
+Daily ETL & ML training is implemented via **Argo CronWorkflows**.
 
-  * Docker image builds
-  * Dependency installation
-  * Image versioning
-* Images are designed to be:
+Pipeline stages:
 
-  * Reproducible
-  * Stateless
-  * Environment-agnostic
+1. Fetch market data
+2. Transform data
+3. Train ML model
+4. Log experiment to MLflow
+5. Store artifacts in S3
 
----
+Properties:
 
-## 📊 Observability & Reliability
-
-* todo:Designed to integrate with:
-
-  * Prometheus metrics (workflow status, duration)
-  * Grafana dashboards
-* Clear failure modes:
-
-  * Missing input data
-  * Permission / volume mount issues
-  * Data validation errors
+* Containerized
+* Stateless
+* Kubernetes-native
+* Scheduled & reproducible
+* Version-controlled via Git
 
 ---
 
-## 🔐 Security & Best Practices
+#  Observability & Metrics
 
-* Containerized workloads (no mutable hosts)
-* Principle of least privilege for data directories
-* Clear separation of:
+The platform includes observability considerations:
 
-  * Raw data
-  * Processed data
-  * Pipeline logic
-* GitOps-friendly workflow definitions
+## Workflow Metrics
+
+* Workflow success / failure rate
+* Execution duration
+* Retry counts
+* Cron execution frequency
+
+## ML Metrics
+
+* Training accuracy
+* Loss metrics
+* Model version tracking
+* Artifact storage size
+
+## Infrastructure Metrics (EKS)
+
+* Pod CPU / memory usage
+* Node utilization
+* Resource limits & requests enforced
+* Failed pod scheduling events
+
+(Planned extensions)
+
+* Prometheus integration
+* Grafana dashboards
+* Alerting via CloudWatch
 
 ---
 
-## Local Development
+#  Security & Access Model
 
- 
+* IAM roles per service
+* Principle of least privilege
+* No hardcoded credentials
+* Kubernetes Secrets for runtime config
+* Isolated namespaces:
 
-It is intentionally designed as a **portfolio-grade project** for:
+  * argocd
+  * mlflow
+  * pipeline
 
-* DevOps Engineer
-* Platform Engineer
-* Cloud Engineer
-* MLOps / Data Platform roles
+EKS access controlled via:
+
+```
+AmazonEKSClusterAdminPolicy
+```
+
+Access can be restricted per IAM principal.
 
 ---
 
-## 📌 Future Improvements
+#  Cost Awareness & Optimization Strategy
 
-* Add Parquet output support
-* Integrate S3 / GCS storage backends
-* Add data quality checks (Great Expectations)
-* Extend MLflow training pipelines
-* Add SLA / SLO definitions for workflows
+The platform is designed with cost-conscious principles:
+
+* Small instance class for dev environments
+* Resource limits defined in workflow pods
+* Separate environment clusters (no noisy neighbour)
+* RDS minimal instance size for dev
+* S3 lifecycle policy (planned)
+* Horizontal scaling only when required
+
+Future enhancements:
+
+* Cluster autoscaler
+* Spot instance node group
+* Cost monitoring dashboards
+
+---
+
+#  CI/CD
+
+## CI (GitHub Actions)
+
+* Lint & test
+* Docker image build
+* Immutable image tagging
+* Push to registry
+
+## CD (GitOps via ArgoCD)
+
+```
+Git Commit → ArgoCD detects → Sync → Deploy
+```
+
+No manual production changes via kubectl.
+
+---
+
+#  Repository Structure
+
+```
+infra/
+ ├── terraform/
+ │    └── environments/
+ │         └── dev/
+ ├── kubernetes/
+ │    ├── bootstrap/
+ │    ├── applications/
+ │    └── workflows/
+
+src/
+ ├── etl/
+ ├── training/
+
+.github/
+  └── workflows/
+```
+
+Separation of concerns:
+
+* Infrastructure
+* Platform services
+* Workloads
+* CI/CD
+
+---
+
+#  Platform Limitations
+
+Current limitations:
+
+1. Single-region deployment (eu-west-2)
+2. No automated environment promotion
+3. No production-level autoscaling
+4. No centralized logging aggregation
+5. No RBAC fine-grained per team
+6. No model registry promotion pipeline
+7. No model serving layer (inference not implemented)
+
+This repository focuses on:
+
+* Platform foundation
+* Orchestration
+* Infrastructure discipline
+* GitOps patterns
+
+Rather than full enterprise ML lifecycle management.
+
+---
+
+#  Design Goals
+
+* Reproducible infrastructure
+* GitOps-native operations
+* Secure secret management
+* Cloud-native orchestration
+* Clear separation between infra and workload
+* Production-style MLOps patterns
+
+---
+
+#  Setup Guide
+
+Full setup instructions available in:
+
+```
+docs/setup.md
+```
+
+Includes:
+
+* Terraform apply
+* EKS kubeconfig setup
+* ArgoCD installation
+* Secret creation
+* MLflow configuration
+
+---
+
+#  Why This Project
+
+This project demonstrates:
+
+* Platform Engineering mindset
+* Real-world MLOps architecture
+* Kubernetes-native data workflows
+* GitOps operations model
+* Secure and scalable cloud foundation
+
+It reflects how modern ML platforms are designed in production environments.
 
