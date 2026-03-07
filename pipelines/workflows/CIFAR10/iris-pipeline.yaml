@@ -30,7 +30,7 @@ spec:
 
         - name: train-model
           template: train-model-template
-          dependencies: [process-data]
+ 
 
   # =========================
   # Step 1: Download CIFAR10
