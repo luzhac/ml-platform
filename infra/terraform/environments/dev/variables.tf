@@ -22,31 +22,31 @@ variable "environment" {
   default     = "dev"
 }
 
- variable "namespace" {
+variable "namespace" {
   description = "namespace"
   type        = string
   default     = "ml-dev"
 }
 
- variable "pipeline_namespace" {
+variable "pipeline_namespace" {
   description = "pipeline_namespace"
   type        = string
   default     = "pipeline"
 }
 
- variable "pipeline_service_account" {
+variable "pipeline_service_account" {
   description = "pipeline_service_account"
   type        = string
   default     = "pipeline-service-account"
 }
 
-  variable "inference_namespace" {
+variable "inference_namespace" {
   description = "inference_namespace"
   type        = string
   default     = "inference"
 }
- 
- variable "inference_service_account" {
+
+variable "inference_service_account" {
   description = "inference_service_account"
   type        = string
   default     = "inference-service-account"

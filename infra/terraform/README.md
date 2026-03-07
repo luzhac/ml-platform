@@ -10,12 +10,14 @@ aws sts get-caller-identity
 aws configure list
 
 $env:AWS_PROFILE="second-aws"
-export AWS_PROFILE=prod
+export AWS_PROFILE=second-aws
 
 kubectl config get-contexts
 kubectl config current-context
 ```
-
+```
+/mnt/c/Myfiles/MyProjects/ml-engineering/infra/terraform/environments/dev
+```
 # make local user access kubectl
 ```
 # only for manul use, created already in eks.tf

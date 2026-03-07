@@ -72,6 +72,34 @@ resource "aws_eks_node_group" "default" {
 }
 
 
+resource "aws_eks_node_group" "gpu" {
+
+  cluster_name    = aws_eks_cluster.this.name
+  node_group_name = "gpu-nodes"
+
+  node_role_arn   = var.node_role_arn
+  subnet_ids      = var.subnet_ids
+
+  instance_types = ["g4dn.xlarge"]
+
+  scaling_config {
+    desired_size = 0
+    min_size     = 0
+    max_size     = 2
+  }
+
+  labels = {
+    workload = "gpu"
+  }
+
+  taint {
+    key    = "gpu"
+    value  = "true"
+    effect = "NO_SCHEDULE"
+  }
+}
+
+
 # Current caller IAM
 data "aws_caller_identity" "current" {}
 
