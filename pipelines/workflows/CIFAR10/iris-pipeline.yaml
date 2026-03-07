@@ -26,12 +26,7 @@ spec:
   - name: cifar10-pipeline
     dag:
       tasks:
-        - name: fetch-data
-          template: fetch-data-template
 
-        - name: process-data
-          template: process-data-template
-          dependencies: [fetch-data]
 
         - name: train-model
           template: train-model-template
