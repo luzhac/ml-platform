@@ -178,6 +178,8 @@ spec:
             print("Model registered and aliased")
 
     resources:
+      requests:
+        nvidia.com/gpu: 1
       limits:
         nvidia.com/gpu: 1
 
