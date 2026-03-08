@@ -182,9 +182,8 @@ spec:
         nvidia.com/gpu: 1
       limits:
         nvidia.com/gpu: 1
-
     nodeSelector:
-      workload: gpu
+      node.kubernetes.io/instance-type: g4dn.xlarge
 
     tolerations:
     - key: "gpu"

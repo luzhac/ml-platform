@@ -97,8 +97,12 @@ resource "aws_eks_node_group" "gpu" {
     value  = "true"
     effect = "NO_SCHEDULE"
   }
-}
 
+  tags = {
+    "k8s.io/cluster-autoscaler/enabled" = "true"
+    "k8s.io/cluster-autoscaler/${aws_eks_cluster.this.name}" = "owned"
+  }
+}
 
 # Current caller IAM
 data "aws_caller_identity" "current" {}
