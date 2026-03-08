@@ -26,64 +26,12 @@ spec:
   - name: cifar10-pipeline
     dag:
       tasks:
-
-
         - name: train-model
           template: train-model-template
- 
+
 
   # =========================
-  # Step 1: Download CIFAR10
-  # =========================
-  - name: fetch-data-template
-    script:
-      image: python:3.11-slim
-      command: [python]
-      source: |
-        import subprocess
-        subprocess.run(["pip", "install", "torch", "torchvision", "-q"], check=True)
-
-        from torchvision import datasets
-
-        print("STEP 1: DOWNLOADING CIFAR10 DATASET")
-
-        datasets.CIFAR10(
-            root="/mnt/data",
-            train=True,
-            download=True
-        )
-
-        print("CIFAR10 dataset downloaded successfully")
-    volumeMounts:
-      - name: workdir
-        mountPath: /mnt/data
-
-  # =========================
-  # Step 2: Data Preparation
-  # =========================
-  - name: process-data-template
-    script:
-      image: python:3.11-slim
-      command: [python]
-      source: |
-        import subprocess
-        subprocess.run(["pip", "install", "torch", "torchvision", "-q"], check=True)
-
-        from torchvision import transforms
-
-        print("STEP 2: PREPARING DATA TRANSFORMS")
-
-        transform = transforms.Compose([
-            transforms.ToTensor()
-        ])
-
-        print("Transforms ready for training")
-    volumeMounts:
-      - name: workdir
-        mountPath: /mnt/data
-
-  # =========================
-  # Step 3: Train CNN + MLflow
+  # Train CNN + MLflow
   # =========================
   - name: train-model-template
     script:
@@ -91,11 +39,7 @@ spec:
       command: [python]
       source: |
         import subprocess
-        subprocess.run([
-            "pip", "install",
-            "mlflow",
-            "-q"
-        ], check=True)
+        subprocess.run(["pip", "install", "mlflow", "torchvision", "-q"], check=True)
 
         import torch
         import torch.nn as nn
@@ -107,19 +51,24 @@ spec:
         import mlflow.pytorch
         from mlflow.tracking import MlflowClient
 
-        print("STEP 3: TRAINING MODEL WITH GPU")
+        print("PIPELINE START")
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print("Using device:", device)
 
+        # =========================
+        # DATA PREPARATION
+        # =========================
         transform = transforms.Compose([
             transforms.ToTensor()
         ])
 
+        print("Downloading CIFAR10 dataset")
+
         train_dataset = datasets.CIFAR10(
             root="/mnt/data",
             train=True,
-            download=False,
+            download=True,
             transform=transform
         )
 
@@ -129,6 +78,9 @@ spec:
             shuffle=True
         )
 
+        # =========================
+        # MODEL
+        # =========================
         class SimpleCNN(nn.Module):
             def __init__(self):
                 super().__init__()
@@ -160,6 +112,9 @@ spec:
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+        # =========================
+        # MLFLOW
+        # =========================
         mlflow.set_tracking_uri("http://mlflow.mlflow.svc.cluster.local:5000")
         mlflow.set_experiment("cifar10-experiment")
 
@@ -168,6 +123,9 @@ spec:
         REGISTERED_MODEL_NAME = "cifar10-cnn"
         DEPLOY_ALIAS = "staging"
 
+        # =========================
+        # TRAINING
+        # =========================
         with mlflow.start_run() as run:
 
             run_id = run.info.run_id
@@ -197,6 +155,9 @@ spec:
 
                 mlflow.log_metric("loss", total_loss, step=epoch)
 
+            # =========================
+            # SAVE MODEL
+            # =========================
             mlflow.pytorch.log_model(model, "model")
 
             model_uri = f"runs:/{run_id}/model"

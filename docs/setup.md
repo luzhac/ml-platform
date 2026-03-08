@@ -65,10 +65,11 @@ kubectl apply -f /mnt/c/Myfiles/MyProjects/ml-engineering/infra/kubernetes/boots
 
 ```
 kubectl create namespace mlflow
+
 kubectl create secret generic postgres-database-secret \
   -n mlflow \
-  --from-literal=username=$env:TF_VAR_mlflow_db_username  \
-  --from-literal=password=$env:TF_VAR_mlflow_db_password 
+  --from-literal=username=$TF_VAR_mlflow_db_username \
+  --from-literal=password=$TF_VAR_mlflow_db_password
 
 ```
 
@@ -76,7 +77,7 @@ kubectl create secret generic postgres-database-secret \
 ## setup argocd ui
 
 ```
-admin XBNlrINh9wTYk6Oj
+admin auDlMb8zO6VBd7g6
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d && echo
 
