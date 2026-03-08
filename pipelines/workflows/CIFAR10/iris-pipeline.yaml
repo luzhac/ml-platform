@@ -182,6 +182,8 @@ spec:
         nvidia.com/gpu: 1
       limits:
         nvidia.com/gpu: 1
+    nodeSelector:
+      node.kubernetes.io/instance-type: g4dn.xlarge
 
     volumeMounts:
       - name: workdir
