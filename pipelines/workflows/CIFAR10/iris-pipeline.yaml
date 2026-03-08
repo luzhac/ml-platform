@@ -39,7 +39,7 @@ spec:
       command: [python]
       source: |
         import subprocess
-        subprocess.run(["pip", "install", "mlflow",  "mlflow==2.9.2","torchvision", "-q"], check=True)
+        subprocess.run(["pip", "install", "mlflow",  "mlflow==2.9.2",boto3","torchvision", "-q"], check=True)
 
         import torch
         import torch.nn as nn
