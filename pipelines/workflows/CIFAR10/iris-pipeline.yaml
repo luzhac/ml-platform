@@ -182,8 +182,15 @@ spec:
         nvidia.com/gpu: 1
       limits:
         nvidia.com/gpu: 1
+
     nodeSelector:
-      node.kubernetes.io/instance-type: g4dn.xlarge
+      workload: gpu
+
+    tolerations:
+    - key: "gpu"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
 
     volumeMounts:
       - name: workdir
